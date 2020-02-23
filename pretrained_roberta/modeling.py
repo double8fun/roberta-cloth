@@ -72,6 +72,9 @@ class RobertaForCloth(BertPreTrainedModel):
         self.loss = nn.CrossEntropyLoss(reduction='none')
         self.vocab_size = self.roberta.embeddings.word_embeddings.weight.size(0)
     
+    def get_output_embeddings(self):
+        return self.lm_head.decoder
+    
     def accuracy(self, out, tgt):
         out = torch.argmax(out, -1)
         return (out == tgt).float()
@@ -86,8 +89,8 @@ class RobertaForCloth(BertPreTrainedModel):
         
         bsz = ops.size(0)
         opnum = ops.size(1)
-   
-        out, _ = self.roberta(articles, attention_mask = articles_mask)
+        outputs = self.roberta(articles, attention_mask = articles_mask)
+        out, _ = outputs[0]
         question_pos = question_pos.unsqueeze(-1)
         question_pos = question_pos.expand(bsz, opnum, out.size(-1))
         out = torch.gather(out, 1, question_pos)

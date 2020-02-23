@@ -11,8 +11,11 @@ from data_util import ClothSample
 import numpy as np
 import torch
 import time
+import transformers
+from transformers import optimization
+from transformers.optimization import AdamW
+from transformers.optimization import get_linear_schedule_with_warmup
 from pretrained_roberta.modeling import RobertaForCloth
-from pretrained_roberta.optimization import BertAdam
 from transformers.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 import functools
 def logging(s, log_path, print_=True, log_=True):
@@ -197,10 +200,9 @@ def main():
     t_total = num_train_steps
     if args.local_rank != -1:
         t_total = t_total // torch.distributed.get_world_size()
-    optimizer = BertAdam(optimizer_grouped_parameters,
-                         lr=args.learning_rate,
-                         warmup=args.warmup_proportion,
-                         t_total=t_total)
+
+    optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, correct_bias=False)
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=int(t_total*args.warmup_proportion), num_training_steps=t_total)
     
     global_step = 0
     if args.do_train:
@@ -214,6 +216,7 @@ def main():
             tr_acc = 0
             nb_tr_examples, nb_tr_steps = 0, 0
             for inp, tgt in train_data.data_iter():
+                outputs = model(inp, tgt)
                 loss, acc, _, _ = model(inp, tgt)
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
@@ -244,10 +247,13 @@ def main():
                             model.zero_grad()
                             continue
                         optimizer.step()
+                        scheduler.step()
                         copy_optimizer_params_to_model(model.named_parameters(), param_optimizer)
                     else:
                         optimizer.step()
+                        scheduler.step()
                     model.zero_grad()
+                    optimizer.zero_grad()
                     global_step += 1
                 if (global_step % args.num_log_steps == 0):
                     logging('step: {} | train loss: {} | train acc {}'.format(

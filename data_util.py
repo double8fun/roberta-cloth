@@ -55,7 +55,7 @@ class ClothSample(object):
         
 class Preprocessor(object):
     def __init__(self, args, device='cpu'):
-        self.tokenizer = BertTokenizer.from_pretrained(args.bert_model)
+        self.tokenizer = RobertaTokenizer.from_pretrained(args.bert_model)
         self.data_dir = args.data_dir
         file_list = get_json_file_list(args.data_dir)
         self.data = []
