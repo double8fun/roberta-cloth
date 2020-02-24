@@ -35,6 +35,7 @@ sys.path.append('..')
 from transformers.file_utils import cached_path, PYTORCH_PRETRAINED_BERT_CACHE
 from transformers.modeling_roberta import RobertaModel, RobertaLMHead
 from transformers.modeling_bert import BertPreTrainedModel
+from transformers.configuration_roberta import RobertaConfig
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s', 
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -60,6 +61,8 @@ def swish(x):
 ACT2FN = {"gelu": gelu, "relu": torch.nn.functional.relu, "swish": swish}
     
 class RobertaForCloth(BertPreTrainedModel):
+    config_class = RobertaConfig
+    base_model_prefix = "roberta"
 
     def __init__(self, config):
         super(RobertaForCloth, self).__init__(config)
@@ -90,7 +93,7 @@ class RobertaForCloth(BertPreTrainedModel):
         bsz = ops.size(0)
         opnum = ops.size(1)
         outputs = self.roberta(articles, attention_mask = articles_mask)
-        out, _ = outputs[0]
+        out = outputs[0]
         question_pos = question_pos.unsqueeze(-1)
         question_pos = question_pos.expand(bsz, opnum, out.size(-1))
         out = torch.gather(out, 1, question_pos)
