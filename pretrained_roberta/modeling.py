@@ -89,7 +89,10 @@ class RobertaForCloth(BertPreTrainedModel):
         output: bsz X opnum 
         '''
         articles, articles_mask, ops, ops_mask, question_pos, mask, high_mask = inp 
-        
+        # import pdb
+        # pdb.set_trace()
+        # print(ops.size())
+        # print(articles)
         bsz = ops.size(0)
         opnum = ops.size(1)
         outputs = self.roberta(articles, attention_mask = articles_mask)
@@ -121,7 +124,7 @@ class RobertaForCloth(BertPreTrainedModel):
         acc_middle = acc - acc_high
 
         loss = loss.sum()/(mask.sum())
-        loss = 0
+        # loss = 0
         return loss, acc, acc_high, acc_middle
                            
     def init_zero_weight(self, shape):

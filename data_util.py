@@ -11,6 +11,8 @@ import fnmatch
 import random
 
 from transformers import RobertaTokenizer
+from transformers import BertTokenizer
+import pdb
 
 def get_json_file_list(data_dir):
     files = []
@@ -55,6 +57,7 @@ class ClothSample(object):
         
 class Preprocessor(object):
     def __init__(self, args, device='cpu'):
+        # self.tokenizer = BertTokenizer.from_pretrained(args.bert_model)
         self.tokenizer = RobertaTokenizer.from_pretrained(args.bert_model)
         self.data_dir = args.data_dir
         file_list = get_json_file_list(args.data_dir)
@@ -74,6 +77,9 @@ class Preprocessor(object):
             high_cnt += sample['high']
             middle_cnt += (1 - sample['high'])
             self.data_objs += self._create_sample(sample)
+            # print(self.data_objs[-1].article)
+            # print(self.data_objs[-1].ops)
+            # input()
             #break
         print('high school sample:', high_cnt)
         print('middle school sample:', middle_cnt)
@@ -84,14 +90,16 @@ class Preprocessor(object):
         
     
     def _create_sample(self, data):
+        # pdb.set_trace()
         cnt = 0
         article = self.tokenizer.tokenize(data['article'])
+  
         if (len(article) <= 512):
             sample = ClothSample()
             sample.article = article
             sample.high = data['high']
             for p in range(len(article)):
-                if (sample.article[p] == '_'):
+                if ('_' in article[p]):
                     sample.article[p] = '[MASK]'
                     sample.ph.append(p)
                     ops = tokenize_ops(data['options'][cnt], self.tokenizer)
@@ -106,7 +114,7 @@ class Preprocessor(object):
             second_sample.high = data['high']
             second_s = len(article) - 512
             for p in range(len(article)):
-                if (article[p] == '_'):
+                if ('_' in article[p]):
                     article[p] = '[MASK]'
                     ops = tokenize_ops(data['options'][cnt], self.tokenizer)
                     if (p < 512):

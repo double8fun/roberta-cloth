@@ -18,6 +18,10 @@ from transformers.optimization import get_linear_schedule_with_warmup
 from pretrained_roberta.modeling import RobertaForCloth
 from transformers.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 import functools
+from timeit import default_timer as timer
+
+import pdb
+
 def logging(s, log_path, print_=True, log_=True):
     if print_:
         print(s)
@@ -168,6 +172,7 @@ def main():
     train_data = None
     if args.do_train:
         train_data = data_util.Loader(args.data_dir, data_file['train'], args.cache_size, args.train_batch_size, device)
+        # pdb.set_trace()
         num_train_steps = int(
             train_data.data_num / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
@@ -204,6 +209,7 @@ def main():
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, correct_bias=False)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=int(t_total*args.warmup_proportion), num_training_steps=t_total)
     
+    tic = timer()
     global_step = 0
     if args.do_train:
         logging("***** Running training *****")
@@ -261,7 +267,8 @@ def main():
                     tr_loss = 0
                     tr_acc = 0
                     nb_tr_examples = 0
-
+    toc = timer()
+    print("   training time = {}".format(toc-tic))
     if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
         logging("***** Running evaluation *****")
         logging("  Batch size = {}".format(args.eval_batch_size))
